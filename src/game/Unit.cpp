@@ -206,6 +206,9 @@ void Unit::Update( uint32 p_time )
         delete *itr;
     m_deletedAuras.clear();
 
+    if (CanHaveThreatList() && getThreatManager().isNeedUpdateToClient(p_time))
+        SendThreatListUpdate();
+
     // update combat timer only for players and pets
     if (isInCombat() && (GetTypeId() == TYPEID_PLAYER || ((Creature*)this)->isPet() || ((Creature*)this)->isCharmed()))
     {
@@ -10295,6 +10298,8 @@ void Unit::AddThreat(Unit* pVictim, float threat /*= 0.0f*/, bool crit /*= false
 
 void Unit::DeleteThreatList()
 {
+    if(CanHaveThreatList() && !m_ThreatManager.isThreatListEmpty())
+        SendClearThreatListOpcode();
     m_ThreatManager.clearReferences();
 }
 
@@ -12633,6 +12638,7 @@ void Unit::KnockBackFrom(Unit* target, float horizintalSpeed, float verticalSpee
     }
 }
 
+
 float Unit::GetCombatRatingReduction(CombatRating cr) const
 {
     if (GetTypeId() == TYPEID_PLAYER)
@@ -12654,4 +12660,58 @@ uint32 Unit::GetCombatRatingDamageReduction(CombatRating cr, float rate, float c
     if (percent > cap)
         percent = cap;
     return uint32 (percent * damage / 100.0f);
+}
+
+void Unit::SendThreatListUpdate()
+{
+    if (uint32 count = getThreatManager().getThreatList().size())
+    {
+        sLog.outDebug( "WORLD: Send SMSG_THREAT_UPDATE Message" );
+        WorldPacket data(SMSG_THREAT_UPDATE, 8 + count * 8);
+        data.append(GetPackGUID());
+        data << uint32(count);
+        std::list<HostileReference*>& tlist = getThreatManager().getThreatList();
+        for (std::list<HostileReference*>::const_iterator itr = tlist.begin(); itr != tlist.end(); ++itr)
+        {
+            data.appendPackGUID((*itr)->getUnitGuid());
+            data << uint32((*itr)->getThreat());
+        }
+        SendMessageToSet(&data, false);
+    }
+}
+
+void Unit::SendChangeCurrentVictimOpcode(HostileReference* pHostileReference)
+{
+    if (uint32 count = getThreatManager().getThreatList().size())
+    {
+        sLog.outDebug( "WORLD: Send SMSG_HIGHEST_THREAT_UPDATE Message" );
+        WorldPacket data(SMSG_HIGHEST_THREAT_UPDATE, 8 + 8 + count * 8);
+        data.append(GetPackGUID());
+        data.appendPackGUID(pHostileReference->getUnitGuid());
+        data << uint32(count);
+        std::list<HostileReference*>& tlist = getThreatManager().getThreatList();
+        for (std::list<HostileReference*>::const_iterator itr = tlist.begin(); itr != tlist.end(); ++itr)
+        {
+            data.appendPackGUID((*itr)->getUnitGuid());
+            data << uint32((*itr)->getThreat());
+        }
+        SendMessageToSet(&data, false);
+    }
+}
+
+void Unit::SendClearThreatListOpcode()
+{
+    sLog.outDebug( "WORLD: Send SMSG_THREAT_CLEAR Message" );
+    WorldPacket data(SMSG_THREAT_CLEAR, 8);
+    data.append(GetPackGUID());
+    SendMessageToSet(&data, false);
+}
+
+void Unit::SendRemoveFromThreatListOpcode(HostileReference* pHostileReference)
+{
+    sLog.outDebug( "WORLD: Send SMSG_THREAT_REMOVE Message" );
+    WorldPacket data(SMSG_THREAT_REMOVE, 8 + 8);
+    data.append(GetPackGUID());
+    data.appendPackGUID(pHostileReference->getUnitGuid());
+    SendMessageToSet(&data, false);
 }
