@@ -2,7 +2,7 @@
 #define _PLAYERBOTAI_H
 
 #include "Common.h"
-#include "QuestDef.h"
+//#include "QuestDef.h"
 
 class WorldPacket;
 class WorldObject;
@@ -13,7 +13,7 @@ class Item;
 class PlayerbotClassAI;
 class PlayerbotMgr;
 
-#define BOTLOOT_DISTANCE 25.0f
+//#define BOTLOOT_DISTANCE 25.0f
 
 class MANGOS_DLL_SPEC PlayerbotAI
 {
@@ -58,7 +58,7 @@ class MANGOS_DLL_SPEC PlayerbotAI
             BOTSTATE_COMBAT,        // bot is in combat
             BOTSTATE_DEAD,          // we are dead and wait for becoming ghost
             BOTSTATE_DEADRELEASED,  // we released as ghost and wait to revive
-            BOTSTATE_LOOTING        // looting mode, used just after combat
+            //BOTSTATE_LOOTING        // looting mode, used just after combat
         };
 
 		enum MovementOrderType
@@ -68,8 +68,8 @@ class MANGOS_DLL_SPEC PlayerbotAI
 			MOVEMENT_STAY		= 0x02
 		};
 
-        typedef std::map<uint32, uint32> BotNeedItem;
-        typedef std::list<uint64> BotLootCreature;
+        //typedef std::map<uint32, uint32> BotNeedItem;
+        //typedef std::list<uint64> BotLootCreature;
 
         // attacker query used in PlayerbotAI::FindAttacker()
         enum ATTACKERINFOTYPE
@@ -190,14 +190,14 @@ class MANGOS_DLL_SPEC PlayerbotAI
 
         BotState GetState() { return m_botState; };
         void SetState( BotState state );
-        void SetQuestNeedItems();
-        void SendQuestItemList( Player& player );
+        /*void SetQuestNeedItems();
+        void SendQuestItemList( Player& player );*/
 		void SendOrders( Player& player );
         bool FollowCheckTeleport( WorldObject &obj );
-        void DoLoot();
+        /*void DoLoot();
 
         void AcceptQuest( Quest const *qInfo, Player *pGiver );
-        void TurnInQuests( WorldObject *questgiver );
+        void TurnInQuests( WorldObject *questgiver );*/
 
         bool IsInCombat();
         void UpdateAttackerInfo();
@@ -216,7 +216,7 @@ class MANGOS_DLL_SPEC PlayerbotAI
         void SetInFront( const Unit* obj );
 
         void ItemLocalization(std::string& itemName, const uint32 itemID) const;
-        void QuestLocalization(std::string& questTitle, const uint32 questID) const;
+        //void QuestLocalization(std::string& questTitle, const uint32 questID) const;
 
     private:
         // ****** Closed Actions ********************************
@@ -246,14 +246,14 @@ class MANGOS_DLL_SPEC PlayerbotAI
         BotState m_botState;
 
         // list of items needed to fullfill quests
-        BotNeedItem m_needItemList;
+        //BotNeedItem m_needItemList;
 
         // list of creatures we recently attacked and want to loot
-        BotLootCreature m_lootCreature;  // list of creatures
-        uint64 m_lootCurrent;            // current remains of interest
+        //BotLootCreature m_lootCreature;  // list of creatures
+        //uint64 m_lootCurrent;            // current remains of interest
 
-        time_t m_TimeDoneEating;
-        time_t m_TimeDoneDrinking;
+        //time_t m_TimeDoneEating;
+        //time_t m_TimeDoneDrinking;
         uint32 m_CurrentlyCastingSpellId;
         //bool m_IsFollowingMaster;
 

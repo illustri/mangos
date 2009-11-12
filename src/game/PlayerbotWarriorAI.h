@@ -40,7 +40,11 @@ class MANGOS_DLL_SPEC PlayerbotWarriorAI : PlayerbotClassAI
         // FURY
         uint32 BERSERKER_STANCE, BATTLE_SHOUT, DEMORALIZING_SHOUT, OVERPOWER, CLEAVE, INTIMIDATING_SHOUT, EXECUTE, CHALLENGING_SHOUT, SLAM, INTERCEPT, DEATH_WISH, BERSERKER_RAGE, WHIRLWIND, PUMMEL, BLOODTHIRST, RECKLESSNESS, RAMPAGE, HEROIC_FURY, COMMANDING_SHOUT, ENRAGED_REGENERATION;
 
-        uint32 SpellSequence;
+        uint32 SpellSequence, LastBattle, LastDefense, LastBerserker;
+
+		bool ChargeSuccess;
+
+		float x, y, z;
 };
 
 #endif

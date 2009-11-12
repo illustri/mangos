@@ -18,6 +18,8 @@ class MANGOS_DLL_SPEC PlayerbotDeathKnightAI : PlayerbotClassAI
         PlayerbotDeathKnightAI(Player* const master, Player* const bot, PlayerbotAI* const ai);
         virtual ~PlayerbotDeathKnightAI();
 
+        bool DoFirstCombatManeuver(Unit*);
+
         // all combat actions go here
         void DoNextCombatManeuver(Unit*);
 

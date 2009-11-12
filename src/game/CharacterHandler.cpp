@@ -598,7 +598,7 @@ void PlayerbotMgr::AddPlayerBot(uint64 playerGuid)
     CharacterDatabase.DelayQueryHolder(&chrHandler, &CharacterHandler::HandlePlayerBotLoginCallback, holder);
 }
 
-void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
+void WorldSession::HandlePlayerLogin(LoginQueryHolder * holder)
 {
     uint64 playerGuid = holder->GetGuid();
 

@@ -19,6 +19,8 @@ class MANGOS_DLL_SPEC PlayerbotDruidAI : PlayerbotClassAI
         PlayerbotDruidAI(Player* const master, Player* const bot, PlayerbotAI* const ai);
         virtual ~PlayerbotDruidAI();
 
+		bool DoFirstCombatManeuver(Unit*);
+
         // all combat actions go here
         void DoNextCombatManeuver(Unit*);
 
@@ -36,10 +38,10 @@ class MANGOS_DLL_SPEC PlayerbotDruidAI : PlayerbotClassAI
 		uint32 CAT_FORM, BEAR_FORM, DIRE_BEAR_FORM, MOONKIN_FORM, TREE_OF_LIFE;
 
         // druid cat attacks
-        uint32 CLAW, COWER, TIGERS_FURY, RAKE, RIP, FEROCIOUS_BITE, MAIM, MANGLE;
+        uint32 PROWL, CLAW, COWER, TIGERS_FURY, RAKE, RIP, FEROCIOUS_BITE, MAIM, MANGLE_CAT, SHRED;
 
 		// druid bear/dire bear attacks & buffs
-		uint32 BASH, MAUL, SWIPE, DEMORALIZING_ROAR, CHALLENGING_ROAR, GROWL, ENRAGE;
+		uint32 FERAL_CHARGE_BEAR, ENRAGE, FAERIE_FIRE_FERAL, BASH, MAUL, SWIPE_BEAR, DEMORALIZING_ROAR, LACERATE, MANGLE_BEAR, CHALLENGING_ROAR, GROWL;
 
 		// druid attacks & debuffs
 		uint32 MOONFIRE, ROOTS, WRATH, STARFALL, STARFIRE, INSECT_SWARM, FAERIE_FIRE, FORCE_OF_NATURE, HURRICANE;
@@ -51,6 +53,10 @@ class MANGOS_DLL_SPEC PlayerbotDruidAI : PlayerbotClassAI
 		uint32 LIFEBLOOM, REJUVENATION, REGROWTH, NOURISH, HEALING_TOUCH, WILD_GROWTH, SWIFTMEND, TRANQUILITY;
 
         uint32 SpellSequence, DruidSpellCombat;
+
+		bool ChargeSuccess;
+
+		float x, y, z;
 };
 
 #endif

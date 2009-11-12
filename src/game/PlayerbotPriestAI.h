@@ -7,7 +7,8 @@ enum
 {
     SPELL_HOLY,
     SPELL_SHADOWMAGIC,
-    SPELL_DISCIPLINE
+    SPELL_DISCIPLINE,
+	SPELL_HEAL
 };
 
 //class Player;
@@ -17,6 +18,8 @@ class MANGOS_DLL_SPEC PlayerbotPriestAI : PlayerbotClassAI
     public:
         PlayerbotPriestAI(Player* const master, Player* const bot, PlayerbotAI* const ai);
         virtual ~PlayerbotPriestAI();
+
+		bool DoFirstCombatManeuver(Unit*);
 
         // all combat actions go here
         void DoNextCombatManeuver(Unit*);
@@ -35,7 +38,7 @@ class MANGOS_DLL_SPEC PlayerbotPriestAI : PlayerbotClassAI
         uint32 GREAT_HEAL, RENEW, HEAL, FLASH_HEAL, REZZ, SMITE, CLEARCASTING, HOLY_NOVA, HOLY_FIRE, DESPERATE_PRAYER, PRAYER_OF_HEALING, CIRCLE_OF_HEALING, BINDING_HEAL, PRAYER_OF_MENDING, MANA_BURN;
 
         // shadowmagic
-        uint32 FADE, PAIN, MIND_BLAST, SCREAM, MIND_FLAY, DEVOURING_PLAGUE, SHADOW_PROTECTION, VAMPIRIC_TOUCH, PRAYER_OF_SHADOW_PROTECTION, SHADOWFIEND, MIND_SEAR;
+        uint32 FADE, PAIN, MIND_BLAST, SCREAM, MIND_FLAY, DEVOURING_PLAGUE, SHADOW_PROTECTION, VAMPIRIC_TOUCH, PRAYER_OF_SHADOW_PROTECTION, SHADOWFIEND, MIND_SEAR, SHADOWFORM;
 
         // discipline
         uint32 PWS, INNER_FIRE, FORTITUDE, TOUCH_OF_WEAKNESS, FEAR_WARD, DSPIRIT, POWER_INFUSION, MASS_DISPEL, PENANCE, DIVINE_SPIRIT, INNER_FOCUS;

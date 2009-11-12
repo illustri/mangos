@@ -18,6 +18,8 @@ class MANGOS_DLL_SPEC PlayerbotWarlockAI : PlayerbotClassAI
         PlayerbotWarlockAI(Player* const master, Player* const bot, PlayerbotAI* const ai);
         virtual ~PlayerbotWarlockAI();
 
+		bool DoFirstCombatManeuver(Unit*);
+
         // all combat actions go here
         void DoNextCombatManeuver(Unit*);
 
@@ -41,15 +43,15 @@ class MANGOS_DLL_SPEC PlayerbotWarlockAI : PlayerbotClassAI
         uint32 SHADOW_BOLT, IMMOLATE, INCINERATE, SEARING_PAIN, CONFLAGRATE, SOUL_FIRE, SHADOWFURY, CHAOS_BOLT, SHADOWFLAME, HELLFIRE, RAIN_OF_FIRE, SHADOWBURN;
 
         // DEMONOLOGY
-        uint32 DEMON_SKIN, DEMON_ARMOR, SHADOW_WARD, FEL_ARMOR, SOULSHATTER, SOUL_LINK, HEALTH_FUNNEL, DETECT_INVISIBILITY;
+        uint32 DEMON_SKIN, DEMON_ARMOR, SHADOW_WARD, FEL_ARMOR, SOULSHATTER, SOUL_LINK, HEALTH_FUNNEL, MASTER_DEMONOLOGIST, DETECT_INVISIBILITY;
 
 		// DEMON SUMMON
 		uint32 SUMMON_IMP, SUMMON_VOIDWALKER, SUMMON_SUCCUBUS, SUMMON_FELHUNTER, SUMMON_FELGUARD;
 
 		// DEMON SKILLS
-		uint32 BLOOD_PACT, CONSUME_SHADOWS, FEL_INTELLIGENCE;
+		uint32 BLOOD_PACT, FEL_INTELLECT, CONSUME_SHADOWS;
 
-        uint32 SpellSequence, LastSpellCurse, LastSpellAffliction, LastSpellDestruction;
+        uint32 SpellSequence, LastSpellCurse, LastSpellAffliction, LastSpellDestruction, LastSpellDemonology;
 };
 
 #endif

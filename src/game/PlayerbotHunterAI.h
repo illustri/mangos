@@ -17,6 +17,8 @@ class MANGOS_DLL_SPEC PlayerbotHunterAI : PlayerbotClassAI
         PlayerbotHunterAI(Player* const master, Player* const bot, PlayerbotAI* const ai);
         virtual ~PlayerbotHunterAI();
 
+		bool DoFirstCombatManeuver(Unit*);
+
         // all combat actions go here
         void DoNextCombatManeuver(Unit*);
 
@@ -36,6 +38,7 @@ class MANGOS_DLL_SPEC PlayerbotHunterAI : PlayerbotClassAI
         uint32 RAPTOR_STRIKE, WING_CLIP, MONGOOSE_BITE, DISENGAGE, DETERRENCE;
         uint32 BEAR_TRAP, FREEZING_TRAP, IMMOLATION_TRAP, FROST_TRAP, EXPLOSIVE_TRAP, ARCANE_TRAP, SNAKE_TRAP;
         uint32 ASPECT_OF_THE_HAWK, ASPECT_OF_THE_MONKEY, RAPID_FIRE, TRUESHOT_AURA, MISDIRECTION;
+		uint32 LastRanged;
 };
 
 #endif

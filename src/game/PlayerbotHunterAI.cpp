@@ -69,6 +69,14 @@ PlayerbotHunterAI::PlayerbotHunterAI(Player* const master, Player* const bot, Pl
 
 PlayerbotHunterAI::~PlayerbotHunterAI() {}
 
+bool PlayerbotHunterAI::DoFirstCombatManeuver(Unit *pTarget)
+{
+	PlayerbotAI* ai = GetAI();
+	Player *m_bot = GetPlayerBot();
+
+	return false;
+}
+
 void PlayerbotHunterAI::DoNextCombatManeuver(Unit *pTarget)
 {
     PlayerbotAI* ai = GetAI();
@@ -89,6 +97,17 @@ void PlayerbotHunterAI::DoNextCombatManeuver(Unit *pTarget)
     Player *m_bot = GetPlayerBot();
 	Unit* pVictim = pTarget->getVictim();
 
+	// check if ranged combat is possible (set m_rangedCombat and switch auras
+    float dist = m_bot->GetDistance( pTarget );
+
+	m_bot->Attack(pTarget, true);
+
+	if (dist>35)
+	{
+		ai->DoCombatMovement();
+		return;
+	}
+
     // check for pet and heal if neccessary
     Pet *pet = m_bot->GetPet();
     if(( pet )
@@ -105,8 +124,6 @@ void PlayerbotHunterAI::DoNextCombatManeuver(Unit *pTarget)
 			return;
 		}
 
-    // check if ranged combat is possible (set m_rangedCombat and switch auras
-    float dist = m_bot->GetDistance( pTarget );
     if( (dist<=ATTACK_DISTANCE || !m_bot->GetUInt32Value(PLAYER_AMMO_ID)) && m_rangedCombat )
     {
         // switch to melee combat (target in melee range, out of ammo)
@@ -153,36 +170,18 @@ void PlayerbotHunterAI::DoNextCombatManeuver(Unit *pTarget)
         out << "Case Ranged";
         if( HUNTERS_MARK>0 && ai->GetManaPercent()>=3 && !pTarget->HasAura(HUNTERS_MARK,0) && ai->CastSpell(HUNTERS_MARK,*pTarget) )
             out << " > Hunter's Mark";
-        else if( RAPID_FIRE>0 && ai->GetManaPercent()>=3 && !m_bot->HasAura(RAPID_FIRE,0) && ai->CastSpell(RAPID_FIRE,*m_bot) )
-            out << " > Rapid Fire";
-        else if( MULTI_SHOT>0 && ai->GetManaPercent()>=13 && ai->GetAttackerCount()>=3 && ai->CastSpell(MULTI_SHOT,*pTarget) )
-            out << " > Multi-Shot";
-        else if( ARCANE_SHOT>0 && ai->GetManaPercent()>=7 && ai->CastSpell(ARCANE_SHOT,*pTarget) )
-            out << " > Arcane Shot";
-        else if( CONCUSSIVE_SHOT>0 && ai->GetManaPercent()>=6 && !pTarget->HasAura(CONCUSSIVE_SHOT,0) && ai->CastSpell(CONCUSSIVE_SHOT,*pTarget) )
-            out << " > Concussive Shot";
-		else if( EXPLOSIVE_SHOT>0 && ai->GetManaPercent()>=10 && !pTarget->HasAura(EXPLOSIVE_SHOT,0) && ai->CastSpell(EXPLOSIVE_SHOT,*pTarget) )
-            out << " > Explosive Shot";
-		else if( VIPER_STING>0 && ai->GetManaPercent()>=8 && pTarget->GetPower(POWER_MANA) > 0 && ai->GetManaPercent()<70 && !pTarget->HasAura(VIPER_STING,0) && ai->CastSpell(VIPER_STING,*pTarget) )
-            out << " > Viper Sting";
-        else if( SERPENT_STING>0 && ai->GetManaPercent()>=13 && !pTarget->HasAura(SERPENT_STING,0) && !pTarget->HasAura(SCORPID_STING,0) && !pTarget->HasAura(VIPER_STING,0) && ai->CastSpell(SERPENT_STING,*pTarget) )
-            out << " > Serpent Sting";
-        else if( SCORPID_STING>0 && ai->GetManaPercent()>=11 && !pTarget->HasAura(WYVERN_STING,0) && !pTarget->HasAura(SCORPID_STING,0) && !pTarget->HasAura(SERPENT_STING,0) && !pTarget->HasAura(VIPER_STING,0) && ai->CastSpell(SCORPID_STING,*pTarget) )
-            out << " > Scorpid Sting";
-		else if( CHIMERA_SHOT>0 && ai->GetManaPercent()>=12 && ai->CastSpell(CHIMERA_SHOT,*pTarget) )
-            out << " > Chimera Shot";
-		else if( VOLLEY>0 && ai->GetManaPercent()>=24 && ai->GetAttackerCount()>=3 && ai->CastSpell(VOLLEY,*pTarget) )
-            out << " > Volley";
-		else if( BLACK_ARROW>0 && ai->GetManaPercent()>=6 && !pTarget->HasAura(BLACK_ARROW,0) && ai->CastSpell(BLACK_ARROW,*pTarget) )
-            out << " > Black Arrow";
-		else if( AIMED_SHOT>0 && ai->GetManaPercent()>=12 && ai->CastSpell(AIMED_SHOT,*pTarget) )
-            out << " > Aimed Shot";
-		else if( STEADY_SHOT>0 && ai->GetManaPercent()>=5 && ai->CastSpell(STEADY_SHOT,*pTarget) )
-            out << " > Steady Shot";
 		else if( KILL_SHOT>0 && ai->GetManaPercent()>=7 && pTarget->GetHealth() < pTarget->GetMaxHealth()*0.20 && ai->CastSpell(KILL_SHOT,*pTarget) )
             out << " > Kill Shot!";
+        else if( RAPID_FIRE>0 && ai->GetManaPercent()>=3 && !m_bot->HasAura(RAPID_FIRE,0) && ai->CastSpell(RAPID_FIRE,*m_bot) )
+            out << " > Rapid Fire";
+        else if( CONCUSSIVE_SHOT>0 && ai->GetManaPercent()>=6 && !pTarget->HasAura(CONCUSSIVE_SHOT,0) && ai->CastSpell(CONCUSSIVE_SHOT,*pTarget) )
+            out << " > Concussive Shot";
+		else if( SERPENT_STING>0 && ai->GetManaPercent()>=13 && !pTarget->HasAura(SERPENT_STING,0) && ai->CastSpell(SERPENT_STING,*pTarget) )
+            out << " > Serpent Sting";
+		else if( STEADY_SHOT>0 && ai->GetManaPercent()>=5 && ai->CastSpell(STEADY_SHOT,*pTarget) )
+            out << " > Steady Shot";
 		else
-            out << " NONE!";
+            LastRanged = 0;
     }
     else
     {
@@ -229,6 +228,8 @@ void PlayerbotHunterAI::DoNonCombatActions()
     if (!m_bot)
         return;
 
+	Item* pItem = ai->FindFood();
+
     // reset ranged combat state
     if( !m_rangedCombat )
         m_rangedCombat = true;
@@ -241,33 +242,12 @@ void PlayerbotHunterAI::DoNonCombatActions()
 	if (ASPECT_OF_THE_HAWK > 0)
 		(!m_bot->HasAura(ASPECT_OF_THE_HAWK, 0) && ai->CastSpell (ASPECT_OF_THE_HAWK, *m_bot));
 
-    // mana check
-    if (m_bot->getStandState() != UNIT_STAND_STATE_STAND)
-        m_bot->SetStandState(UNIT_STAND_STATE_STAND);
+	// hp & mana check
+	if (m_bot->getStandState() != UNIT_STAND_STATE_STAND)
+         m_bot->SetStandState(UNIT_STAND_STATE_STAND);
 
-    Item* pItem = ai->FindDrink();
-
-    if (pItem != NULL && ai->GetManaPercent() < 30)
-    {
-        ai->TellMaster("I could use a drink.");
-        ai->UseItem(*pItem);
-        ai->SetIgnoreUpdateTime(30);
-        return;
-    }
-
-    // hp check
-    if (m_bot->getStandState() != UNIT_STAND_STATE_STAND)
-        m_bot->SetStandState(UNIT_STAND_STATE_STAND);
-
-    pItem = ai->FindFood();
-
-    if (pItem != NULL && ai->GetHealthPercent() < 30)
-    {
-        ai->TellMaster("I could use some food.");
-        ai->UseItem(*pItem);
-        ai->SetIgnoreUpdateTime(30);
-        return;
-    }
+	if (GetAI()->GetManaPercent() < 60 || GetAI()->GetHealthPercent() < 60)
+		GetAI()->Feast();
 
     // check for pet
     if( PET_SUMMON>0 && !m_petSummonFailed )

@@ -17,6 +17,8 @@ class MANGOS_DLL_SPEC PlayerbotPaladinAI : PlayerbotClassAI
         PlayerbotPaladinAI(Player* const master, Player* const bot, PlayerbotAI* const ai);
         virtual ~PlayerbotPaladinAI();
 
+		bool DoFirstCombatManeuver(Unit*);
+
         // all combat actions go here
         void DoNextCombatManeuver(Unit*);
 
@@ -27,8 +29,11 @@ class MANGOS_DLL_SPEC PlayerbotPaladinAI : PlayerbotClassAI
         void BuffPlayer(Player *target);
 
     private:
+		// Heals the target based off its hps
+        void HealTarget (Unit& target, uint8 hp);
+
         // RET
-        uint32 RETRIBUTION_AURA, SEAL_OF_COMMAND, JUDGEMENT_OF_LIGHT, JUDGEMENT_OF_WISDOM, GREATER_BLESSING_OF_WISDOM, GREATER_BLESSING_OF_MIGHT, BLESSING_OF_WISDOM, BLESSING_OF_MIGHT, HAMMER_OF_JUSTICE, RIGHTEOUS_FURY, CRUSADER_AURA, CRUSADER_STRIKE, AVENGING_WRATH;
+        uint32 SEAL_OF_VENGEANCE, DIVINE_STORM, RETRIBUTION_AURA, SEAL_OF_COMMAND, JUDGEMENT_OF_LIGHT, JUDGEMENT_OF_WISDOM, GREATER_BLESSING_OF_WISDOM, GREATER_BLESSING_OF_MIGHT, BLESSING_OF_WISDOM, BLESSING_OF_MIGHT, HAMMER_OF_JUSTICE, RIGHTEOUS_FURY, CRUSADER_AURA, CRUSADER_STRIKE, AVENGING_WRATH;
 
         // HOLY
         uint32 FLASH_OF_LIGHT, HOLY_LIGHT, DIVINE_SHIELD, HAMMER_OF_WRATH, CONSECRATION, CONCENTRATION_AURA;

@@ -104,32 +104,36 @@ void PlayerbotRogueAI::DoNextCombatManeuver(Unit *pTarget)
         GetAI()->TellMaster("AttackStop, CombatStop, Vanish");
     }*/
 
+	// we fight in melee, target is not in range, skip the next part!
+    if( fTargetDist > ATTACK_DISTANCE )
+	{
+		m_bot->Attack(pTarget, false);
+		ai->DoCombatMovement();
+        return;
+	}
+
     // decide what to do:
-    if( pVictim==m_bot && CLOAK_OF_SHADOWS>0 && pVictim->HasAura(SPELL_AURA_PERIODIC_DAMAGE) && !m_bot->HasAura(CLOAK_OF_SHADOWS,0) && ai->CastSpell(CLOAK_OF_SHADOWS) )
+    /*if( CLOAK_OF_SHADOWS>0 && pVictim->HasAura(SPELL_AURA_PERIODIC_DAMAGE) && !m_bot->HasAura(CLOAK_OF_SHADOWS,0) && ai->CastSpell(CLOAK_OF_SHADOWS) )
     {
         if( ai->GetManager()->m_confDebugWhisper )
             ai->TellMaster( "CoS!" );
         return;
-    }
-    else if( m_bot->HasAura( STEALTH ) )
+    }*/
+    if( m_bot->HasAura( STEALTH ) )
         SpellSequence = RogueStealth;
     else if( pTarget->IsNonMeleeSpellCasted(true) )
         SpellSequence = RogueSpellPreventing;
-    else if( pVictim==m_bot && ai->GetHealthPercent()<40 )
+    else if( pVictim==m_bot && ai->GetHealthPercent()<75 )
         SpellSequence = RogueThreat;
     else
         SpellSequence = RogueCombat;
-
-    // we fight in melee, target is not in range, skip the next part!
-    if( fTargetDist > ATTACK_DISTANCE )
-        return;
 
     std::ostringstream out;
     switch (SpellSequence)
     {
         case RogueStealth:
             out << "Case Stealth";
-            if( AMBUSH>0 && ai->GetEnergyAmount()>=60 && ai->CastSpell(AMBUSH,*pTarget) )
+            if( AMBUSH>0 && ai->GetEnergyAmount()>=60 && pTarget->isInBackInMap(m_bot,1) && ai->CastSpell(AMBUSH,*pTarget) )
                 out << " > Ambush";
             if( CHEAP_SHOT>0 && ai->GetEnergyAmount()>=60 && ai->CastSpell(CHEAP_SHOT,*pTarget) )
                 out << " > Cheap Shot";
@@ -138,26 +142,31 @@ void PlayerbotRogueAI::DoNextCombatManeuver(Unit *pTarget)
             break;
         case RogueThreat:
             out << "Case Threat";
-            if( EVASION>0 && ai->GetHealthPercent()<=35 && !m_bot->HasAura(EVASION,0) && ai->CastSpell(EVASION) )
-                out << " > Evasion";
-            else if( FEINT>0 && ai->GetHealthPercent()<=25 && ai->GetEnergyAmount()>=20 && ai->CastSpell(FEINT) )
+            if( FEINT>0 && ai->GetHealthPercent()<=75 && ai->GetEnergyAmount()>=20 && ai->CastSpell(FEINT) )
                 out << " > Feint";
+            else if( EVASION>0 && ai->GetHealthPercent()<=50 && !m_bot->HasAura(EVASION,0) && ai->CastSpell(EVASION) )
+                out << " > Evasion";
+			else if ( VANISH > 0 && ai->GetHealthPercent()<=25 && ai->CastSpell(VANISH) )
+                out << " > Vanish";
             else
                 out << " NONE!";
             break;
         case RogueSpellPreventing:
             out << "Case Prevent";
-            if( KIDNEY_SHOT>0 && ai->GetEnergyAmount()>=25 && m_bot->GetComboPoints()>=2 && ai->CastSpell(KIDNEY_SHOT,*pTarget) )
-                out << " > Kidney Shot";
-            else if( KICK>0 && ai->GetEnergyAmount()>=25  && ai->CastSpell(KICK,*pTarget) )
+			if ( KICK>0 && ai->GetEnergyAmount()>=45  && ai->CastSpell(KICK,*pTarget) )
                 out << " > Kick";
+            else if ( GOUGE>0 && ai->GetEnergyAmount()>=25  && ai->CastSpell(GOUGE,*pTarget) )
+                out << " > Gouge";
+            else if( KIDNEY_SHOT>0 && ai->GetEnergyAmount()>=25 && m_bot->GetComboPoints()>=2 && ai->CastSpell(KIDNEY_SHOT,*pTarget) )
+                out << " > Kidney Shot";
             else
                 out << " NONE!";
             break;
         case RogueCombat:
         default:
+			m_bot->Attack(pTarget,true);
             out << "Case Combat";
-            if( m_bot->GetComboPoints()<=4 )
+            if( m_bot->GetComboPoints()<5 )
             {
                 if( BACKSTAB>0 && pTarget->isInBackInMap(m_bot,1) && ai->GetEnergyAmount()>=60 && ai->CastSpell(BACKSTAB,*pTarget) )
                     out << " > Backstab";
@@ -180,8 +189,8 @@ void PlayerbotRogueAI::DoNextCombatManeuver(Unit *pTarget)
                     out << " > Warlock Slice & Dice";
                 else if (SLICE_DICE>0 && pTarget->getClass()==CLASS_HUNTER && ai->GetEnergyAmount()>=25 && ai->CastSpell(SLICE_DICE, *pTarget) )
                     out << " > Hunter Slice & Dice";
-                else if (EXPOSE_ARMOR>0 && pTarget->getClass()==CLASS_WARRIOR && ai->GetEnergyAmount()>=25 && ai->CastSpell(EXPOSE_ARMOR, *pTarget) )
-                    out << " > Warrior Expose Armor";
+                else if (KIDNEY_SHOT>0 && pTarget->getClass()==CLASS_WARRIOR && ai->GetEnergyAmount()>=25 && ai->CastSpell(KIDNEY_SHOT, *pTarget) )
+                    out << " > Warrior Kidney";
                 else if (EXPOSE_ARMOR>0 && pTarget->getClass()==CLASS_PALADIN && ai->GetEnergyAmount()>=25 && ai->CastSpell(EXPOSE_ARMOR, *pTarget) )
                     out << " > Paladin Expose Armor";
                 else if (EXPOSE_ARMOR>0 && pTarget->getClass()==CLASS_DEATH_KNIGHT && ai->GetEnergyAmount()>=25 && ai->CastSpell(EXPOSE_ARMOR, *pTarget) )
@@ -219,6 +228,7 @@ void PlayerbotRogueAI::DoNonCombatActions()
 
     if (GetAI()->GetHealthPercent() < 60)
         GetAI()->Feast();
+
 /*
     // Poison check //Not working needs some mor testing...i think need to tell the bott where "slot" to apply poison.
 

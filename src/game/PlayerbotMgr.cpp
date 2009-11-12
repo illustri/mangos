@@ -193,7 +193,7 @@ void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
             return;
         } /* EMOTE ends here */
 
-        case CMSG_GAMEOBJ_USE:
+        /*case CMSG_GAMEOBJ_USE:
             {
                 WorldPacket p(packet);
 		    p.rpos(0); // reset reader
@@ -279,7 +279,7 @@ void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
                 }
             }
             return;
-        }
+        }*/
         /*
         case CMSG_NAME_QUERY:
         case MSG_MOVE_START_FORWARD:

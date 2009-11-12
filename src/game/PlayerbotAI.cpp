@@ -75,19 +75,18 @@ public:
     bool revive(const Player& botPlayer) { return HandleReviveCommand(botPlayer.GetName()); }
     bool teleport(const Player& botPlayer) { return HandleNamegoCommand(botPlayer.GetName()); }
     void sysmessage(const char *str) { SendSysMessage(str); }
-    bool dropQuest(const char *str) { return HandleQuestRemove(str); }
+    //bool dropQuest(const char *str) { return HandleQuestRemove(str); }
 };
 
 PlayerbotAI::PlayerbotAI(PlayerbotMgr* const mgr, Player* const bot) :
     m_mgr(mgr), m_bot(bot), m_ignoreAIUpdatesUntilTime(0),
     m_combatOrder(ORDERS_NONE), m_ScenarioType(SCENARIO_PVEEASY),
-    m_TimeDoneEating(0), m_TimeDoneDrinking(0),
     m_CurrentlyCastingSpellId(0), m_spellIdCommand(0),
 	m_targetGuidCommand(0), m_classAI(0) {
 
     // set bot state and needed item list
     m_botState = BOTSTATE_NORMAL;
-    SetQuestNeedItems();
+    //SetQuestNeedItems();
 
 	// reset some pointers
     m_targetChanged = false;
@@ -325,7 +324,7 @@ void PlayerbotAI::SendNotEquipList(Player& player)
     }
 }
 
-void PlayerbotAI::SendQuestItemList( Player& player )
+/*void PlayerbotAI::SendQuestItemList( Player& player )
 {
     std::ostringstream out;
 
@@ -343,7 +342,7 @@ void PlayerbotAI::SendQuestItemList( Player& player )
 
     TellMaster( "Here's a list of all items I need for quests:" );
     TellMaster( out.str().c_str() );
-}
+}*/
 
 void PlayerbotAI::SendOrders( Player& player )
 {
@@ -375,9 +374,9 @@ void PlayerbotAI::SendOrders( Player& player )
             out << "DEAD";
         else if( m_botState == BOTSTATE_DEADRELEASED )
             out << "RELEASED";
-        else if( m_botState == BOTSTATE_LOOTING )
+        /*else if( m_botState == BOTSTATE_LOOTING )
             out << "LOOTING";
-        out << ". Movement order is ";
+        out << ". Movement order is ";*/
         if( m_movementOrder == MOVEMENT_NONE )
             out << "NONE";
         else if( m_movementOrder == MOVEMENT_FOLLOW )
@@ -580,6 +579,15 @@ void PlayerbotAI::HandleBotOutgoingPacket(const WorldPacket& packet)
             }
             return;
         }
+
+		// Guild invite auto accept
+		// there are no checks atm, bot just auto accepts all ginvite
+		case SMSG_GUILD_INVITE:
+			{
+			WorldPacket p;
+			m_bot->GetSession()->HandleGuildAcceptOpcode(p);
+			return;
+			}
 
         // Handle when another player opens the trade window with the bot
         // also sends list of tradable items bot can trade if bot is allowed to obey commands from
@@ -1092,52 +1100,35 @@ void PlayerbotAI::InterruptCurrentCastingSpell()
 
 void PlayerbotAI::Feast()
 {
-    // stand up if we are done feasting
-    if (!(m_bot->GetHealth() < m_bot->GetMaxHealth() || (m_bot->getPowerType() == POWER_MANA && m_bot->GetPower(POWER_MANA) < m_bot->GetMaxPower(POWER_MANA))))
-    {
-        m_bot->SetStandState(UNIT_STAND_STATE_STAND);
-        return;
-    }
-
-    // wait 3 seconds before checking if we need to drink more or eat more
     time_t currentTime = time(0);
-    m_ignoreAIUpdatesUntilTime = currentTime + 3;
 
-    // should we drink another
-    if (m_bot->getPowerType() == POWER_MANA && currentTime > m_TimeDoneDrinking
-            && ((static_cast<float> (m_bot->GetPower(POWER_MANA)) / m_bot->GetMaxPower(POWER_MANA)) < 0.8))
-    {
-        Item* pItem = FindDrink();
-        if (pItem != NULL)
-        {
-            UseItem(*pItem);
-            m_TimeDoneDrinking = currentTime + 30;
-            return;
-        }
-        TellMaster("I need water.");
-    }
+    // need to drink
+	if ( m_bot->getPowerType() == POWER_MANA && GetManaPercent()<90 )
+     {
+         Item* pItem = FindDrink();
+         if (pItem != NULL)
+         {
+			TellMaster("drinking now...");
+             UseItem(*pItem);
+			 m_ignoreAIUpdatesUntilTime = currentTime + 30;
+         }
+		else
+         TellMaster("I need water.");
+     }
 
-    // should we eat another
-    if (currentTime > m_TimeDoneEating && ((static_cast<float> (m_bot->GetHealth()) / m_bot->GetMaxHealth()) < 0.8))
-    {
-        Item* pItem = FindFood();
-        if (pItem != NULL)
-        {
-            //TellMaster("eating now...");
-            UseItem(*pItem);
-            m_TimeDoneEating = currentTime + 30;
-            return;
-        }
-        TellMaster("I need food.");
-    }
-
-    // if we are no longer eating or drinking
-    // because we are out of items or we are above 80% in both stats
-    if (currentTime > m_TimeDoneEating && currentTime > m_TimeDoneDrinking)
-    {
-        TellMaster("done feasting!");
-        m_bot->SetStandState(UNIT_STAND_STATE_STAND);
-    }
+	// need to eat
+	if ( GetHealthPercent()<90 )
+     {
+         Item* pItem = FindFood();
+         if (pItem != NULL)
+         {
+             //TellMaster("eating now...");
+             UseItem(*pItem);
+			 m_ignoreAIUpdatesUntilTime = currentTime + 30;
+         }
+		else
+			TellMaster("I need food.");
+     }
 }
 
 // intelligently sets a reasonable combat order for this bot
@@ -1148,9 +1139,9 @@ void PlayerbotAI::GetCombatTarget( Unit* forcedTarget )
     if( m_botState != BOTSTATE_COMBAT )
     {
         SetState( BOTSTATE_COMBAT );
-        SetQuestNeedItems();
-        m_lootCreature.clear();
-        m_lootCurrent = 0;
+        //SetQuestNeedItems();
+        //m_lootCreature.clear();
+        //m_lootCurrent = 0;
 		m_targetCombat = 0;
     }
 
@@ -1224,28 +1215,29 @@ void PlayerbotAI::GetCombatTarget( Unit* forcedTarget )
     if (m_bot->getStandState() != UNIT_STAND_STATE_STAND)
         m_bot->SetStandState(UNIT_STAND_STATE_STAND);
 
-    m_bot->Attack(m_targetCombat, true);
-
     // add thingToAttack to loot list
-    m_lootCreature.push_back( m_targetCombat->GetGUID() );
+    //m_lootCreature.push_back( m_targetCombat->GetGUID() );
 
 	// set movement generators for combat movement
 	MovementClear();
+
     return;
 }
 
 void PlayerbotAI::DoNextCombatManeuver()
 {
     // check for new targets
-	GetCombatTarget();
+	if (!m_targetCombat)
+		GetCombatTarget();
+
 	// check if we have a target - fixes crash reported by rrtn (kill hunter's pet bug)
 	// if current target for attacks doesn't make sense anymore
     // clear our orders so we can get orders in next update
     if( !m_targetCombat || m_targetCombat->isDead() || !m_targetCombat->IsInWorld() || !m_bot->IsHostileTo(m_targetCombat) )
     {
-        m_bot->AttackStop();
+		m_bot->AttackStop();
         m_bot->SetSelection(0);
-        MovementReset();
+        MovementClear();
         m_bot->InterruptNonMeleeSpells(true);
 		m_targetCombat = 0;
         m_targetChanged = false;
@@ -1254,44 +1246,24 @@ void PlayerbotAI::DoNextCombatManeuver()
     }
 
     // do opening moves, if we changed target
-    if( m_targetChanged )
+    if( GetClassAI() )
     {
-        if( GetClassAI() )
+		if (m_targetChanged)
             m_targetChanged = GetClassAI()->DoFirstCombatManeuver( m_targetCombat );
         else
-            m_targetChanged = false;
-    }
-
-    // do normal combat movement
-	DoCombatMovement();
-
-    if (GetClassAI() && !m_targetChanged )
-        (GetClassAI())->DoNextCombatManeuver( m_targetCombat );
+            GetClassAI()->DoNextCombatManeuver( m_targetCombat );
+	}
 }
 
-void PlayerbotAI::DoCombatMovement() {
-	if( !m_targetCombat ) return;
-
-	float targetDist = m_bot->GetDistance( m_targetCombat );
-
-	if( m_combatStyle==COMBAT_MELEE && !m_bot->hasUnitState( UNIT_STAT_CHASE ) && ( (m_movementOrder==MOVEMENT_STAY && targetDist<=ATTACK_DISTANCE) || (m_movementOrder!=MOVEMENT_STAY) ) )
-	{
-		// melee combat - chase target if in range or if we are not forced to stay
+void PlayerbotAI::DoCombatMovement()
+{
+	if( m_movementOrder!=MOVEMENT_STAY )
 		m_bot->GetMotionMaster()->MoveChase( m_targetCombat );
-	}
-	else if( m_combatStyle==COMBAT_RANGED && m_movementOrder!=MOVEMENT_STAY )
-	{
-		// ranged combat - just move within spell range
-		// TODO: just follow in spell range! how to determine bots spell range?
-		if( targetDist>25.0f ) {
-			m_bot->GetMotionMaster()->MoveChase( m_targetCombat );
-		} else {
-			MovementClear();
-		}
-	}
+	else
+		MovementClear();
 }
 
-void PlayerbotAI::SetQuestNeedItems()
+/*void PlayerbotAI::SetQuestNeedItems()
 {
     // reset values first
     m_needItemList.clear();
@@ -1319,14 +1291,14 @@ void PlayerbotAI::SetQuestNeedItems()
         }
     }
 }
-
+*/
 void PlayerbotAI::SetState( BotState state )
 {
     //sLog.outDebug( "[PlayerbotAI]: %s switch state %d to %d", m_bot->GetName(), m_botState, state );
     m_botState = state;
 }
 
-void PlayerbotAI::DoLoot()
+/*void PlayerbotAI::DoLoot()
 {
     if( !m_lootCurrent && m_lootCreature.empty() )
     {
@@ -1579,7 +1551,7 @@ void PlayerbotAI::TurnInQuests( WorldObject *questgiver )
         }
     }
 }
-
+*/
 bool PlayerbotAI::IsInCombat()
 {
     bool inCombat = false;
@@ -1875,8 +1847,8 @@ void PlayerbotAI::UpdateAI(const uint32 p_time)
         {
             //sLog.outDebug( "[PlayerbotAI]: %s died and is not in correct state...", m_bot->GetName() );
             // clear loot list on death
-            m_lootCreature.clear();
-            m_lootCurrent = 0;
+            //m_lootCreature.clear();
+            //m_lootCurrent = 0;
             // clear combat orders
             m_bot->SetSelection(0);
             m_bot->GetMotionMaster()->Clear(true);
@@ -1963,11 +1935,12 @@ void PlayerbotAI::UpdateAI(const uint32 p_time)
         // bot was in combat recently - loot now
         else if (m_botState == BOTSTATE_COMBAT)
         {
-            SetState( BOTSTATE_LOOTING );
+            //SetState( BOTSTATE_LOOTING );
+			SetState( BOTSTATE_NORMAL );
             m_attackerInfo.clear();
         }
-        else if (m_botState == BOTSTATE_LOOTING)
-            DoLoot();
+        /*else if (m_botState == BOTSTATE_LOOTING)
+            DoLoot();*/
 /*
         // are we sitting, if so feast if possible
         else if (m_bot->getStandState() == UNIT_STAND_STATE_SIT)
@@ -2071,7 +2044,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId)
         // search for Creature::reachWithSpellAttack to also see some examples of spell distance usage
         if (!m_bot->isInFrontInMap(pTarget, 10))
         {
-            m_bot->SetInFront(pTarget);
+        m_bot->SetInFront(pTarget);
 		MovementUpdate();
         }
     }
@@ -2428,7 +2401,7 @@ void PlayerbotAI::ItemLocalization(std::string& itemName, const uint32 itemID) c
     }
 }
 
-void PlayerbotAI::QuestLocalization(std::string& questTitle, const uint32 questID) const
+/*void PlayerbotAI::QuestLocalization(std::string& questTitle, const uint32 questID) const
 {
     int loc = GetMaster()->GetSession()->GetSessionDbLocaleIndex();
     std::wstring wnamepart;
@@ -2444,7 +2417,7 @@ void PlayerbotAI::QuestLocalization(std::string& questTitle, const uint32 questI
         }
     }
 }
-
+*/
 // handle commands sent through chat channels
 void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
 {
@@ -2506,10 +2479,10 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
     {
         SetState( BOTSTATE_NORMAL );
 		MovementReset();
-        SetQuestNeedItems();
+        //SetQuestNeedItems();
 		UpdateAttackerInfo();
-        m_lootCreature.clear();
-        m_lootCurrent = 0;
+        //m_lootCreature.clear();
+        //m_lootCurrent = 0;
 		m_targetCombat = 0;
 		// do we want to reset all states on this command?
 //		m_combatOrder = ORDERS_NONE;
@@ -2517,8 +2490,8 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
 //		m_targetAssisst = 0;
 //		m_targetProtect = 0;
     }
-    else if (text == "report")
-        SendQuestItemList( *GetMaster() );
+    /*else if (text == "report")
+        SendQuestItemList( *GetMaster() );*/
     else if (text == "orders")
         SendOrders( *GetMaster() );
     else if (text == "follow" || text == "come")
@@ -2581,7 +2554,7 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
             EquipItem(**it);
     }
 
-	else if (text == "quests")
+	/*else if (text == "quests")
 	{
 		bool hasIncompleteQuests = false;
 	std::ostringstream incomout;
@@ -2625,7 +2598,7 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
 			ch.sysmessage("ERROR: could not drop quest");
 		if (oldSelectionGUID)
 			fromPlayer.SetSelection(oldSelectionGUID);
-	}
+	}*/
 
 
 
@@ -2677,8 +2650,11 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
         ch.SendSysMessage(negOut.str().c_str());
     }
 
+	else if (text == "feast")
+		Feast();
 
-    else
+
+    /*else
     {
 	// if this looks like an item link, reward item it completed quest and talking to NPC
         std::list<uint32> itemIds;
@@ -2727,11 +2703,11 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
 		    }
 		}
 
-	}
+	}*/
         else {
-            std::string msg = "What? follow, stay, (c)ast <spellname>, spells, (e)quip <itemlink>, (u)se <itemlink>, drop <questlink>, report, quests";
+            std::string msg = "What? follow, stay, (c)ast <spellname>, spells, (e)quip <itemlink>, (u)se <itemlink>, drop <questlink>, report, quests, feast";
             SendWhisper(msg, fromPlayer);
             m_bot->HandleEmoteCommand(EMOTE_ONESHOT_TALK);
-        }
+        //}
     }
 }

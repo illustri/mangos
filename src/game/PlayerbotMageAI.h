@@ -18,6 +18,8 @@ class MANGOS_DLL_SPEC PlayerbotMageAI : PlayerbotClassAI
         PlayerbotMageAI(Player* const master, Player* const bot, PlayerbotAI* const ai);
         virtual ~PlayerbotMageAI();
 
+        bool DoFirstCombatManeuver(Unit*);
+
         // all combat actions go here
         void DoNextCombatManeuver(Unit*);
 
@@ -32,7 +34,7 @@ class MANGOS_DLL_SPEC PlayerbotMageAI : PlayerbotClassAI
         uint32 ARCANE_MISSILES, ARCANE_EXPLOSION, COUNTERSPELL, SLOW, ARCANE_BARRAGE, ARCANE_BLAST, MIRROR_IMAGE, ARCANE_POWER;
 
         // FIRE
-        uint32 FIREBALL, FIRE_BLAST, FLAMESTRIKE, SCORCH, PYROBLAST, BLAST_WAVE, COMBUSTION, DRAGONS_BREATH, LIVING_BOMB, FROSTFIRE_BOLT, FIRE_WARD;
+        uint32 MOLTEN_ARMOR, FIREBALL, FIRE_BLAST, FLAMESTRIKE, SCORCH, PYROBLAST, BLAST_WAVE, COMBUSTION, DRAGONS_BREATH, LIVING_BOMB, FROSTFIRE_BOLT, FIRE_WARD;
 
         // FROST
         uint32 DEEP_FREEZE, FROSTBOLT, FROST_NOVA, BLIZZARD, ICY_VEINS, CONE_OF_COLD, ICE_BARRIER, SUMMON_WATER_ELEMENTAL, ICE_LANCE, FROST_WARD, ICE_BLOCK, COLD_SNAP;

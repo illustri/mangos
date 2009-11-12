@@ -1,6 +1,7 @@
 // a simple DK class by rrtn :)
 
 #include "PlayerbotDeathKnightAI.h"
+#include "PlayerbotMgr.h"
 
 class PlayerbotAI;
 PlayerbotDeathKnightAI::PlayerbotDeathKnightAI(Player* const master, Player* const bot, PlayerbotAI* const ai): PlayerbotClassAI(master, bot, ai) {
@@ -15,7 +16,7 @@ PlayerbotDeathKnightAI::PlayerbotDeathKnightAI(Player* const master, Player* con
    BONE_SHIELD		 = 49222; // buffs
    RAISE_DEAD        = ai->getSpellId("raise dead"); // pets (TODO: check for pets exist)
    SUMMON_GARGOYLE   = 49206;
-   ARMY_OF_THE_DEAD  = ai->getSpellId("army of the dead");
+   ARMY_OF_THE_DEAD  = 42650;
    ICY_TOUCH         = ai->getSpellId("icy touch"); // Frost
    OBLITERATE        = ai->getSpellId("obliterate");
    HOWLING_BLAST     = ai->getSpellId("howling blast");
@@ -44,6 +45,34 @@ PlayerbotDeathKnightAI::PlayerbotDeathKnightAI(Player* const master, Player* con
 
 PlayerbotDeathKnightAI::~PlayerbotDeathKnightAI() {}
 
+bool PlayerbotDeathKnightAI::DoFirstCombatManeuver(Unit *pTarget)
+{
+	PlayerbotAI* ai = GetAI();
+	Player *m_bot = GetPlayerBot();
+
+	LastSpellUnholyDK = LastSpellFrostDK = LastSpellBloodDK = 0;
+
+	if (HORN_OF_WINTER> 0 && !m_bot->HasAura(HORN_OF_WINTER,0) && ai->CastSpell(HORN_OF_WINTER, *m_bot))
+	{
+		if( ai->GetManager()->m_confDebugWhisper )
+            ai->TellMaster("First > Horn of Winter");
+		return true;
+	}
+	if (BONE_SHIELD > 0 && !m_bot->HasAura(BONE_SHIELD, 0) && ai->CastSpell (BONE_SHIELD, *m_bot))
+	{
+		if( ai->GetManager()->m_confDebugWhisper )
+            ai->TellMaster("First > Bone Shield");
+		return true;
+	}
+	if (MARK_OF_BLOOD > 0 && !pTarget->HasAura(MARK_OF_BLOOD, 0) && ai->CastSpell(MARK_OF_BLOOD, *pTarget))
+	{
+		if( ai->GetManager()->m_confDebugWhisper )
+            ai->TellMaster("First > Mark of Blood");
+		return true;
+	}
+	return false;
+}
+
 void PlayerbotDeathKnightAI::DoNextCombatManeuver(Unit *pTarget)
 {
    PlayerbotAI* ai = GetAI();
@@ -67,290 +96,191 @@ void PlayerbotDeathKnightAI::DoNextCombatManeuver(Unit *pTarget)
    ai->SetInFront( pTarget );//<---
    Player *m_bot = GetPlayerBot();
    Unit* pVictim = pTarget->getVictim();
+   m_bot->Attack(pTarget, true);
 
+   if (m_bot->GetDistance(pTarget)>ATTACK_DISTANCE)
+   {
+	   ai->DoCombatMovement();
+	   return;
+   }
+
+   std::ostringstream out;
    switch (SpellSequence)
    {
        case SPELL_DK_UNHOLY:
-		   if (UNHOLY_PRESENCE > 0)
-			   (!m_bot->HasAura(UNHOLY_PRESENCE, 0) && !m_bot->HasAura(BLOOD_PRESENCE, 0) && !m_bot->HasAura(FROST_PRESENCE, 0) && ai->CastSpell (UNHOLY_PRESENCE, *m_bot));
-
-		   // check for BONE_SHIELD in combat
-		   if (BONE_SHIELD > 0)
-			   (!m_bot->HasAura(BONE_SHIELD, 0) && !m_bot->HasAura(ARMY_OF_THE_DEAD, 0) && ai->CastSpell (BONE_SHIELD, *m_bot));
-
-		   if (ARMY_OF_THE_DEAD > 0 && ai->GetAttackerCount()>=5 && LastSpellUnholyDK < 1)
+		   out << "Case Unholy";
+		   if (ARMY_OF_THE_DEAD > 0 && ai->GetAttackerCount()>=5 && LastSpellUnholyDK < 1 && ai->CastSpell(ARMY_OF_THE_DEAD))
            {
-			   ai->TellMaster("summoning Army of the Dead!");
-               ai->CastSpell(ARMY_OF_THE_DEAD);
-			   if (ARMY_OF_THE_DEAD > 0 && m_bot->HasAura(ARMY_OF_THE_DEAD, 0))
-				   ai->SetIgnoreUpdateTime(7);
-               SpellSequence = SPELL_DK_FROST;
-               LastSpellUnholyDK = LastSpellUnholyDK +1;
-               break;
+			   ai->SetIgnoreUpdateTime(7);
+               out << "> Army of the Dead";
+			   LastSpellUnholyDK++;
            }
-           else if (PLAGUE_STRIKE > 0 && !pTarget->HasAura(PLAGUE_STRIKE, 0) && LastSpellUnholyDK < 2)
-           {
-               ai->CastSpell(PLAGUE_STRIKE, *pTarget);
-               SpellSequence = SPELL_DK_FROST;
-               LastSpellUnholyDK = LastSpellUnholyDK +1;
-               break;
+           else if (PLAGUE_STRIKE > 0 && !pTarget->HasAura(PLAGUE_STRIKE, 0) && LastSpellUnholyDK < 2 && ai->CastSpell(PLAGUE_STRIKE, *pTarget))
+		   {
+			   out << "> Plague Strike";
+			   LastSpellUnholyDK++;
 		   }
-		   else if (DEATH_GRIP > 0 && !pTarget->HasAura(DEATH_GRIP, 0) && LastSpellUnholyDK < 3)
+		   else if (DEATH_GRIP > 0 && !pTarget->HasAura(DEATH_GRIP, 0) && LastSpellUnholyDK < 3 && ai->CastSpell(DEATH_GRIP, *pTarget))
+		   {
+			   out << "> Death Grip";
+			   LastSpellUnholyDK++;
+		   }
+           else if (DEATH_COIL > 0 && LastSpellUnholyDK < 4 && ai->GetRunicPower() >= 40 && ai->CastSpell(DEATH_COIL, *pTarget))
+		   {
+			   out << "> Death Coil";
+			   LastSpellUnholyDK++;
+		   }
+           else if (DEATH_STRIKE > 0 && !pTarget->HasAura(DEATH_STRIKE, 0) && LastSpellUnholyDK < 5 && ai->CastSpell(DEATH_STRIKE, *pTarget))
+		   {
+			   out << "> Death Strike";
+			   LastSpellUnholyDK++;
+		   }
+           else if (UNHOLY_BLIGHT > 0 && !m_bot->HasAura(UNHOLY_BLIGHT, 0) && !pTarget->HasAura(UNHOLY_BLIGHT, 0) && LastSpellUnholyDK < 6 && ai->GetRunicPower() >= 40 && ai->CastSpell(UNHOLY_BLIGHT))
+		   {
+			   out << "> Unholy Blight";
+			   LastSpellUnholyDK++;
+		   }
+           else if (SCOURGE_STRIKE > 0 && LastSpellUnholyDK < 7 && ai->CastSpell(SCOURGE_STRIKE, *pTarget))
+		   {
+			   out << "> Scourge Strike";
+			   LastSpellUnholyDK++;
+		   }
+		   else if (DEATH_AND_DECAY > 0 && ai->GetAttackerCount()>=3 && !pTarget->HasAura(DEATH_AND_DECAY, 0) && LastSpellUnholyDK < 8 && ai->CastSpell(DEATH_AND_DECAY))
            {
-               ai->CastSpell(DEATH_GRIP, *pTarget);
-               SpellSequence = SPELL_DK_FROST;
-               LastSpellUnholyDK = LastSpellUnholyDK +1;
-               break;
-           }
-           else if (DEATH_COIL > 0 && LastSpellUnholyDK < 4 && ai->GetRunicPower() >= 40)
-           {
-               ai->CastSpell(DEATH_COIL, *pTarget);
-               SpellSequence = SPELL_DK_FROST;
-               LastSpellUnholyDK = LastSpellUnholyDK +1;
-               break;
-           }
-           else if (DEATH_STRIKE > 0 && !pTarget->HasAura(DEATH_STRIKE, 0) && LastSpellUnholyDK < 5)
-           {
-               ai->CastSpell(DEATH_STRIKE, *pTarget);
-               SpellSequence = SPELL_DK_FROST;
-               LastSpellUnholyDK = LastSpellUnholyDK +1;
-               break;
-           }
-           else if (UNHOLY_BLIGHT > 0 && !m_bot->HasAura(UNHOLY_BLIGHT, 0) && !pTarget->HasAura(UNHOLY_BLIGHT, 0) && LastSpellUnholyDK < 6 && ai->GetRunicPower() >= 40)
-           {
-               ai->CastSpell(UNHOLY_BLIGHT);
-               SpellSequence = SPELL_DK_FROST;
-               LastSpellUnholyDK = LastSpellUnholyDK +1;
-               break;
-           }
-           else if (SCOURGE_STRIKE > 0 && LastSpellUnholyDK < 7)
-           {
-               ai->CastSpell(SCOURGE_STRIKE, *pTarget);
-               SpellSequence = SPELL_DK_FROST;
-               LastSpellUnholyDK = LastSpellUnholyDK +1;
-               break;
-           }
-		   else if (DEATH_AND_DECAY > 0 && ai->GetAttackerCount()>=3 && !pTarget->HasAura(DEATH_AND_DECAY, 0) && LastSpellUnholyDK < 8)
-           {
-               ai->CastSpell(DEATH_AND_DECAY);
 			   ai->SetIgnoreUpdateTime(1);
-               SpellSequence = SPELL_DK_FROST;
-               LastSpellUnholyDK = LastSpellUnholyDK +1;
-               break;
+               out << "> Death and Decay";
+			   LastSpellUnholyDK++;
            }
-		   else if (SUMMON_GARGOYLE > 0 && !m_bot->HasAura(ARMY_OF_THE_DEAD, 0) && LastSpellUnholyDK < 9 && ai->GetRunicPower() >= 50)
+		   else if (SUMMON_GARGOYLE > 0 && !m_bot->HasAura(ARMY_OF_THE_DEAD, 0) && LastSpellUnholyDK < 9 && ai->GetRunicPower() >= 50 && ai->CastSpell(SUMMON_GARGOYLE))
            {
-			   //ai->TellMaster("summoning gargoyle.");
-               ai->CastSpell(SUMMON_GARGOYLE);
 			   ai->SetIgnoreUpdateTime(2);
-               SpellSequence = SPELL_DK_FROST;
-               LastSpellUnholyDK = LastSpellUnholyDK +1;
-               break;
+               out << "> Summon Gargoyle";
+			   LastSpellUnholyDK++;
            }
-           else if (RAISE_DEAD > 0 && !m_bot->HasAura(ARMY_OF_THE_DEAD, 0) && LastSpellUnholyDK < 10)
-           {
-			   //ai->TellMaster("summoning ghoul.");
-               ai->CastSpell(RAISE_DEAD);
-               SpellSequence = SPELL_DK_FROST;
-               LastSpellUnholyDK = LastSpellUnholyDK +1;
-               break;
-           }
-           else if (LastSpellUnholyDK > 11)
-           {
-               LastSpellUnholyDK = 0;
-               SpellSequence = SPELL_DK_FROST;
-               break;
-           }
-
-           LastSpellUnholyDK = 0;
+           else if (RAISE_DEAD > 0 && !m_bot->HasAura(ARMY_OF_THE_DEAD, 0) && LastSpellUnholyDK < 10 && ai->CastSpell(RAISE_DEAD))
+		   {
+			   out << "> Raise Dead";
+			   LastSpellUnholyDK++;
+		   }
+           else
+			   LastSpellUnholyDK = 0;
+		   break;
 
        case SPELL_DK_FROST:
-           if (FROST_PRESENCE > 0)
-               (!m_bot->HasAura(FROST_PRESENCE, 0) && !m_bot->HasAura(BLOOD_PRESENCE, 0) && !m_bot->HasAura(UNHOLY_PRESENCE, 0) && ai->CastSpell (FROST_PRESENCE, *m_bot));
-
-		   if (DEATHCHILL > 0)
-			   (!m_bot->HasAura(DEATHCHILL, 0) && !m_bot->HasAura(KILLING_MACHINE, 0) && ai->CastSpell (DEATHCHILL, *m_bot));
-		   else if (KILLING_MACHINE > 0)
-			   (!m_bot->HasAura(KILLING_MACHINE, 0) && !m_bot->HasAura(DEATHCHILL, 0) && ai->CastSpell (KILLING_MACHINE, *m_bot));
-
-		   if (ICY_TOUCH > 0 && !pTarget->HasAura(ICY_TOUCH, 0) && LastSpellFrostDK < 1)
-           {
-               ai->CastSpell(ICY_TOUCH, *pTarget);
-               SpellSequence = SPELL_DK_BLOOD;
-               LastSpellFrostDK = LastSpellFrostDK +1;
-               break;
-           }
-           else if (OBLITERATE > 0 && LastSpellFrostDK < 2)
-           {
-               ai->CastSpell(OBLITERATE, *pTarget);
-               SpellSequence = SPELL_DK_BLOOD;
-               LastSpellFrostDK = LastSpellFrostDK +1;
-               break;
-           }
-           else if (FROST_STRIKE > 0 && LastSpellFrostDK < 3 && ai->GetRunicPower() >= 32)
-           {
-               ai->CastSpell(FROST_STRIKE, *pTarget);
-               SpellSequence = SPELL_DK_BLOOD;
-               LastSpellFrostDK = LastSpellFrostDK +1;
-               break;
-           }
-           else if (HOWLING_BLAST > 0 && ai->GetAttackerCount()>=3 && LastSpellFrostDK < 4)
-           {
-               ai->CastSpell(HOWLING_BLAST, *pTarget);
-               SpellSequence = SPELL_DK_BLOOD;
-               LastSpellFrostDK = LastSpellFrostDK +1;
-               break;
-           }
-		   else if (CHAINS_OF_ICE > 0 && !pTarget->HasAura(CHAINS_OF_ICE, 0) && LastSpellFrostDK < 5)
-           {
-               ai->CastSpell(CHAINS_OF_ICE, *pTarget);
-               SpellSequence = SPELL_DK_BLOOD;
-               LastSpellFrostDK = LastSpellFrostDK +1;
-               break;
-           }
-           else if (RUNE_STRIKE > 0 && LastSpellFrostDK < 6 && ai->GetRunicPower() >= 20)
-           {
-               ai->CastSpell(RUNE_STRIKE, *pTarget);
-               SpellSequence = SPELL_DK_BLOOD;
-               LastSpellFrostDK = LastSpellFrostDK +1;
-               break;
-           }
-           else if (ICY_CLUTCH > 0 && !pTarget->HasAura(ICY_CLUTCH, 0) && LastSpellFrostDK < 7)
-           {
-               ai->CastSpell(ICY_CLUTCH, *pTarget);
-               SpellSequence = SPELL_DK_BLOOD;
-               LastSpellFrostDK = LastSpellFrostDK +1;
-               break;
-           }
-		   else if (ICEBOUND_FORTITUDE > 0 && ai->GetHealthPercent() < 50 && !m_bot->HasAura(ICEBOUND_FORTITUDE, 0) && LastSpellFrostDK < 8 && ai->GetRunicPower() >= 20)
-           {
-               ai->CastSpell(ICEBOUND_FORTITUDE, *m_bot);
-               SpellSequence = SPELL_DK_BLOOD;
-               LastSpellFrostDK = LastSpellFrostDK +1;
-               break;
-           }
-           else if (LastSpellFrostDK > 9)
-           {
-               LastSpellFrostDK = 0;
-               SpellSequence = SPELL_DK_BLOOD;
-               break;
-           }
-
-           LastSpellFrostDK = 0;
+		   out << "Case Frost";
+		   if (DEATHCHILL > 0 && !m_bot->HasAura(DEATHCHILL, 0) && !m_bot->HasAura(KILLING_MACHINE, 0) && ai->CastSpell (DEATHCHILL, *m_bot))
+		   {
+			   out << "> Deathchill";
+			   break;
+		   }
+		   if (KILLING_MACHINE > 0 && !m_bot->HasAura(KILLING_MACHINE, 0) && !m_bot->HasAura(DEATHCHILL, 0) && ai->CastSpell (KILLING_MACHINE, *m_bot))
+		   {
+			   out << "> Killing Machine";
+			   break;
+		   }
+		   if (ICY_TOUCH > 0 && !pTarget->HasAura(ICY_TOUCH, 0) && LastSpellFrostDK < 1 && ai->CastSpell(ICY_TOUCH, *pTarget))
+		   {
+			   out << "> Icy Touch";
+			   LastSpellFrostDK++;
+		   }
+           else if (OBLITERATE > 0 && LastSpellFrostDK < 2 && ai->CastSpell(OBLITERATE, *pTarget))
+		   {
+			   out << "> Obliterate";
+			   LastSpellFrostDK++;
+		   }
+           else if (FROST_STRIKE > 0 && LastSpellFrostDK < 3 && ai->GetRunicPower() >= 32 && ai->CastSpell(FROST_STRIKE, *pTarget))
+		   {
+			   out << "> Frost Strike";
+			   LastSpellFrostDK++;
+		   }
+           else if (HOWLING_BLAST > 0 && ai->GetAttackerCount()>=3 && LastSpellFrostDK < 4 && ai->CastSpell(HOWLING_BLAST, *pTarget))
+		   {
+			   out << "> Howling Blast";
+			   LastSpellFrostDK++;
+		   }
+		   else if (CHAINS_OF_ICE > 0 && !pTarget->HasAura(CHAINS_OF_ICE, 0) && LastSpellFrostDK < 5 && ai->CastSpell(CHAINS_OF_ICE, *pTarget))
+		   {
+			   out << "> Chains of Ice";
+			   LastSpellFrostDK++;
+		   }
+           else if (RUNE_STRIKE > 0 && LastSpellFrostDK < 6 && ai->GetRunicPower() >= 20 && ai->CastSpell(RUNE_STRIKE, *pTarget))
+		   {
+			   out << "> Rune Strike";
+			   LastSpellFrostDK++;
+		   }
+           else if (ICY_CLUTCH > 0 && !pTarget->HasAura(ICY_CLUTCH, 0) && LastSpellFrostDK < 7 && ai->CastSpell(ICY_CLUTCH, *pTarget))
+		   {
+			   out << "> Icy Clutch";
+			   LastSpellFrostDK++;
+		   }
+		   else if (ICEBOUND_FORTITUDE > 0 && ai->GetHealthPercent() < 50 && !m_bot->HasAura(ICEBOUND_FORTITUDE, 0) && LastSpellFrostDK < 8 && ai->GetRunicPower() >= 20 && ai->CastSpell(ICEBOUND_FORTITUDE, *m_bot))
+		   {
+			   out << "> Icebound Fortitude";
+			   LastSpellFrostDK++;
+		   }
+           else
+			   LastSpellFrostDK = 0;
+		   break;
 
        case SPELL_DK_BLOOD:
-           if (BLOOD_PRESENCE > 0)
-               (!m_bot->HasAura(BLOOD_PRESENCE, 0) && !m_bot->HasAura(UNHOLY_PRESENCE, 0) && !m_bot->HasAura(FROST_PRESENCE, 0) && ai->CastSpell (BLOOD_PRESENCE, *m_bot));
-
-		   if (DEATH_RUNE_MASTERY > 0 && !m_bot->HasAura(DEATH_RUNE_MASTERY, 0) && LastSpellBloodDK < 1)
-           {
-               ai->CastSpell(DEATH_RUNE_MASTERY, *m_bot);
-               SpellSequence = SPELL_DK_UNHOLY;
-               LastSpellBloodDK =  LastSpellBloodDK +1;
-               break;
-           }
-           else if (BLOOD_STRIKE > 0 && LastSpellBloodDK < 2)
-           {
-               ai->CastSpell(BLOOD_STRIKE, *pTarget);
-               SpellSequence = SPELL_DK_UNHOLY;
-               LastSpellBloodDK =  LastSpellBloodDK +1;
-               break;
-           }
-           else if (MARK_OF_BLOOD > 0 && !pTarget->HasAura(MARK_OF_BLOOD, 0) && LastSpellBloodDK < 3)
-           {
-               ai->CastSpell(MARK_OF_BLOOD, *pTarget);
-               SpellSequence = SPELL_DK_UNHOLY;
-               LastSpellBloodDK = LastSpellBloodDK +1;
-               break;
-           }
-           else if (PESTILENCE > 0 && LastSpellBloodDK < 3)
-           {
-               ai->CastSpell(PESTILENCE, *pTarget);
-               SpellSequence = SPELL_DK_UNHOLY;
-               LastSpellBloodDK = LastSpellBloodDK +1;
-               break;
-           }
-           else if (STRANGULATE > 0 && !pTarget->HasAura(STRANGULATE, 0) && LastSpellBloodDK < 4)
-           {
-               ai->CastSpell(STRANGULATE, *pTarget);
-               SpellSequence = SPELL_DK_UNHOLY;
-               LastSpellBloodDK = LastSpellBloodDK +1;
-               break;
-           }
-           else if (BLOOD_BOIL > 0 && ai->GetAttackerCount()>=5 && LastSpellBloodDK < 5)
-           {
-               ai->CastSpell(BLOOD_BOIL, *pTarget);
-               SpellSequence = SPELL_DK_UNHOLY;
-               LastSpellBloodDK = LastSpellBloodDK +1;
-               break;
-           }
-		   else if (HEART_STRIKE > 0 && LastSpellBloodDK < 6)
-           {
-               ai->CastSpell(HEART_STRIKE, *pTarget);
-               SpellSequence = SPELL_DK_UNHOLY;
-               LastSpellBloodDK = LastSpellBloodDK +1;
-               break;
-           }
-		   else if (VAMPIRIC_BLOOD > 0 && ai->GetHealthPercent() < 70 && !m_bot->HasAura(VAMPIRIC_BLOOD, 0) && LastSpellBloodDK < 7)
-           {
-			   ai->CastSpell(VAMPIRIC_BLOOD, *m_bot);
-               SpellSequence = SPELL_DK_UNHOLY;
-               LastSpellBloodDK = LastSpellBloodDK +1;
-               break;
-           }
-           else if (RUNE_TAP > 0 && ai->GetHealthPercent() < 70 && LastSpellBloodDK < 8)
-           {
-			   ai->CastSpell(RUNE_TAP, *m_bot);
-               SpellSequence = SPELL_DK_UNHOLY;
-               LastSpellBloodDK = LastSpellBloodDK +1;
-               break;
-           }
-           else if (DEATH_PACT > 0 && ai->GetHealthPercent() < 50 && LastSpellBloodDK < 9 && ai->GetRunicPower() >= 40)
-           {
-               ai->CastSpell(DEATH_PACT);
-               SpellSequence = SPELL_DK_UNHOLY;
-               LastSpellBloodDK = LastSpellBloodDK +1;
-               break;
-           }
-           else if (LastSpellBloodDK > 10)
-           {
-               LastSpellBloodDK = 0;
-               SpellSequence = SPELL_DK_UNHOLY;
-               break;
-           }
-               LastSpellBloodDK = 0;
-               SpellSequence = SPELL_DK_UNHOLY;// <------
-           }
+		   out << "Case Blood";
+		   if (ICY_TOUCH > 0 && LastSpellBloodDK < 1 && !pTarget->HasAura(ICY_TOUCH, 0) && ai->CastSpell(ICY_TOUCH, *pTarget))
+		   {
+			   out << "> Icy Touch";
+			   LastSpellBloodDK++;
+		   }
+		   else if (PLAGUE_STRIKE > 0 && LastSpellBloodDK < 2 && !pTarget->HasAura(PLAGUE_STRIKE, 0) && ai->CastSpell(PLAGUE_STRIKE, *pTarget))
+		   {
+			   LastSpellBloodDK++;
+			   out << "> Plague Strike";
+		   }
+		   else if (HEART_STRIKE > 0 && LastSpellBloodDK < 4 && ai->CastSpell(HEART_STRIKE, *pTarget))
+		   {
+			   out << "> Heart Strike";
+			   LastSpellBloodDK++;
+		   }
+		   else if (BLOOD_STRIKE > 0 && LastSpellBloodDK < 4 && ai->CastSpell(BLOOD_STRIKE, *pTarget))
+		   {
+			   out << "> Blood Strike";
+			   LastSpellBloodDK++;
+		   }
+           else if (OBLITERATE > 0 && LastSpellBloodDK < 5 && ai->CastSpell(OBLITERATE, *pTarget))
+		   {
+			   out << "> Obliterate";
+			   LastSpellBloodDK++;
+		   }
+		   else if (DEATH_COIL > 0 && LastSpellBloodDK < 6 && ai->GetRunicPower() >= 40 && ai->CastSpell(DEATH_COIL, *pTarget))
+		   {
+			   out << "> Death Coil";
+			   LastSpellBloodDK++;
+		   }
+		   else
+			   LastSpellBloodDK=0;
+		   break;
+   }
+	if( ai->GetManager()->m_confDebugWhisper )
+        ai->TellMaster( out.str().c_str() );
 
 } // end DoNextCombatManeuver
 
 void PlayerbotDeathKnightAI::DoNonCombatActions()
 {
    Player * m_bot = GetPlayerBot();
+   PlayerbotAI* ai = GetAI();
+
    if (!m_bot)
        return;
-
-   SpellSequence = SPELL_DK_BLOOD;
-
-   // buff myself with BONE_SHIELD
-   if (BONE_SHIELD > 0)
-       (!m_bot->HasAura(BONE_SHIELD, 0) && GetAI()->CastSpell (BONE_SHIELD, *m_bot));
-
-   // buff master with HORN_OF_WINTER
-   if (HORN_OF_WINTER> 0)
-       (!GetMaster()->HasAura(HORN_OF_WINTER,0) && GetAI()->CastSpell (HORN_OF_WINTER, *(GetMaster())) );
 
    // hp check
    if (m_bot->getStandState() != UNIT_STAND_STATE_STAND)
        m_bot->SetStandState(UNIT_STAND_STATE_STAND);
 
-   Item* pItem = GetAI()->FindFood();
+   if (GetAI()->GetHealthPercent() < 60)
+	   GetAI()->Feast();
 
-   if (pItem != NULL && GetAI()->GetHealthPercent() < 15)
-   {
-       GetAI()->TellMaster("I could use some food.");
-       GetAI()->UseItem(*pItem);
-       GetAI()->SetIgnoreUpdateTime(30);
-       return;
-   }
+   if (m_bot->HasAura(UNHOLY_PRESENCE, 0)) SpellSequence = SPELL_DK_UNHOLY;
+   else if (m_bot->HasAura(FROST_PRESENCE, 0)) SpellSequence = SPELL_DK_FROST;
+   else if (m_bot->HasAura(BLOOD_PRESENCE, 0)) SpellSequence = SPELL_DK_BLOOD;
+   else
+	   ai->TellMaster("Tell me which presence use by cast order");
 } // end DoNonCombatActions

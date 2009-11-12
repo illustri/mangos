@@ -515,10 +515,10 @@ void WorldSession::HandlePushQuestToParty(WorldPacket& recvPacket)
 
                 pPlayer->SetDivider(_player->GetGUID());
 
-                if (pPlayer->GetPlayerbotAI())
+                /*if (pPlayer->GetPlayerbotAI())
                     pPlayer->GetPlayerbotAI()->AcceptQuest( pQuest, _player );
                 else
-                    pPlayer->PlayerTalkClass->SendQuestGiverQuestDetails( pQuest, _player->GetGUID(), true );
+                    pPlayer->PlayerTalkClass->SendQuestGiverQuestDetails( pQuest, _player->GetGUID(), true );*/
             }
         }
     }
